@@ -116,7 +116,7 @@ inline void Server<MessageType>::broadcast(MessageType type, size_t length,
 										   const void *content) {
 	std::lock_guard<std::mutex> lock(set_mutex);
 	for (auto s = session_set.begin(); s != session_set.end(); s++) {
-		send(*s, type, length, *content);
+		send(*s, type, length, content);
 	}
 }
 // 开始运行
