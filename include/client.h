@@ -26,6 +26,8 @@ public:
 	void run();
 	// 主动关闭连接
 	void close();
+	// 是否停止了
+	bool is_stopped();
 
 private:
 	asio::io_context io_ctx;
@@ -36,6 +38,7 @@ private:
 	std::function<void(EventConnect event)> event_connect_handler;
 	std::function<void(EventDisconnect event)> event_disconnect_handler;
 	std::mutex send_mutex;
+	bool is_stop;
 };
 
 template <typename MessageType>
@@ -53,7 +56,9 @@ inline Client<MessageType>::Client(const std::string &server_ip,
 						if (event_error_handler) {
 							event_error_handler(EventError{msg});
 						}
+						this->close();
 					}) {
+	is_stop = false;
 	session.socket.async_connect(
 		asio::ip::tcp::endpoint(asio::ip::address::from_string(server_ip),
 								server_port),
@@ -112,4 +117,8 @@ template <typename MessageType> inline void Client<MessageType>::run() {
 template <typename MessageType> inline void Client<MessageType>::close() {
 	session.socket.close();
 	io_ctx.stop();
+	is_stop = true;
+}
+template <typename MessageType> inline bool Client<MessageType>::is_stopped() {
+	return is_stop;
 }

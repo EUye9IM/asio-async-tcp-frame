@@ -31,7 +31,6 @@ int main() {
 		server.onEventDisconnect(
 			[&server](Session<MsgType> *sess, EventDisconnect event) {
 				cout << "disconnect " << sess->socket.remote_endpoint() << endl;
-				server.close(sess);
 			});
 		server.run();
 	} catch (const std::exception &e) {

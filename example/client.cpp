@@ -18,13 +18,11 @@ int main() {
 			cout << "connect " << event.socket->local_endpoint() << " -> "
 				 << event.socket->remote_endpoint() << endl;
 		});
-		client.onEventDisconnect([&client](EventDisconnect event) {
-			cout << "disconnect" << endl;
-			client.close();
-		});
+		client.onEventDisconnect(
+			[&client](EventDisconnect event) { cout << "disconnect" << endl; });
 		thread t([&client]() {
 			string s;
-			while (true) {
+			while (!client.is_stopped()) {
 				cin >> s;
 				cout << "send: " << s << endl;
 				client.send(MsgType::STR, s.length(),
@@ -34,6 +32,7 @@ int main() {
 			}
 		});
 		client.run();
+		t.join();
 	} catch (const std::exception &e) {
 		cout << "exception: " << e.what() << '\n';
 	}

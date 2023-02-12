@@ -35,6 +35,7 @@ public:
 	void close(Session<MessageType> *s);
 	// 关闭所有连接，停止服务
 	void stop();
+	bool is_stopped();
 
 private:
 	void doAccept();
@@ -52,6 +53,7 @@ private:
 		event_connect_handler;
 	std::function<void(Session<MessageType> *sess, EventDisconnect event)>
 		event_disconnect_handler;
+	bool is_stop;
 };
 
 template <typename MessageType>
@@ -59,6 +61,7 @@ inline Server<MessageType>::Server(const std::string &ip, int port)
 	: set_mutex(), session_set(), io_ctx(),
 	  acc(io_ctx,
 		  asio::ip::tcp::endpoint(asio::ip::address::from_string(ip), port)) {
+	is_stop = false;
 	doAccept();
 }
 template <typename MessageType> inline Server<MessageType>::~Server() {
@@ -125,8 +128,12 @@ template <typename MessageType>
 inline void Server<MessageType>::close(Session<MessageType> *s) {
 	if (!s)
 		return;
+	if (event_disconnect_handler) {
+		event_disconnect_handler(s, EventDisconnect{});
+	}
 	s->socket.close();
 	std::lock_guard<std::mutex> lock(set_mutex);
+	session_set.erase(s);
 	delete s;
 }
 // 关闭所有连接，停止服务
@@ -136,7 +143,13 @@ template <typename MessageType> inline void Server<MessageType>::stop() {
 		(*s)->socket.close();
 		delete *s;
 	}
+	session_set.clear();
 	io_ctx.stop();
+	is_stop = true;
+}
+
+template <typename MessageType> inline bool Server<MessageType>::is_stopped() {
+	return is_stop;
 }
 
 template <typename MessageType> inline void Server<MessageType>::doAccept() {
@@ -154,6 +167,7 @@ template <typename MessageType> inline void Server<MessageType>::doAccept() {
 					if (event_error_handler) {
 						event_error_handler(s, EventError{msg});
 					}
+					close(s);
 				});
 			session->run();
 			if (true) {
