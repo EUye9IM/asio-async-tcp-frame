@@ -100,15 +100,7 @@ inline void Server<MessageType>::send(Session<MessageType> *sess,
 									  const void *content) {
 	if (!sess)
 		return;
-	PkgHeader<MessageType> header{type, length};
-
-	char *buf = new char[length + sizeof(header)];
-	memcpy(buf, &header, sizeof(header));
-	if (length)
-		memcpy(buf + sizeof(header), content, length);
-
-	sess->write(length + sizeof(header), buf);
-	delete[] buf;
+	sess->write(type, length, content);
 }
 // 对所有连接发送报文
 template <typename MessageType>
@@ -117,7 +109,7 @@ inline void Server<MessageType>::broadcast(MessageType type, size_t length,
 	std::lock_guard<std::mutex> lock(set_mutex);
 	for (auto s = session_set.begin(); s != session_set.end(); s++) {
 		send(*s, type, length, content);
-	}
+	}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
 }
 // 开始运行
 template <typename MessageType> inline void Server<MessageType>::run() {
@@ -131,7 +123,6 @@ inline void Server<MessageType>::close(Session<MessageType> *s) {
 	}
 	std::lock_guard<std::mutex> lock(set_mutex);
 	if (session_set.count(s)) {
-		s->socket.close();
 		session_set.erase(s);
 		delete s;
 	}
@@ -140,7 +131,6 @@ inline void Server<MessageType>::close(Session<MessageType> *s) {
 template <typename MessageType> inline void Server<MessageType>::stop() {
 	std::lock_guard<std::mutex> lock(set_mutex);
 	for (auto s = session_set.begin(); s != session_set.end(); s++) {
-		(*s)->socket.close();
 		delete *s;
 	}
 	session_set.clear();

@@ -103,13 +103,7 @@ inline void Client<MessageType>::onEventDisconnect(
 template <typename MessageType>
 inline void Client<MessageType>::send(MessageType type, size_t length,
 									  const void *content) {
-	PkgHeader<MessageType> header{type, length};
-	char *buf = new char[length + sizeof(header)];
-	memcpy(buf, &header, sizeof(header));
-	if (length)
-		memcpy(buf + sizeof(header), content, length);
-	session.write(length + sizeof(header), buf);
-	delete[] buf;
+	session.write(type, length, content);
 }
 template <typename MessageType> inline void Client<MessageType>::run() {
 	io_ctx.run();

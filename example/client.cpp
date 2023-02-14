@@ -27,8 +27,6 @@ int main() {
 				cout << "send: " << s << endl;
 				client.send(MsgType::STR, s.length(),
 							reinterpret_cast<const void *>(s.c_str()));
-				if (s == "exit")
-					client.close();
 			}
 		});
 		client.run();

@@ -34,8 +34,9 @@ public:
 			std::function<void(Session<MessageType, Datatype> *,
 							   const std::string &)>
 				error_callback);
+	~Session();
 
-	void write(size_t length, const void *buf);
+	void write(MessageType type, size_t length, const void *content);
 	Datatype data;
 	asio::ip::tcp::socket socket;
 	PkgHeader<MessageType> pkg_header;
@@ -80,14 +81,24 @@ inline Session<MessageType, Datatype>::Session(
 	  error_callback(error_callback), write_mutex(), is_writing(false),
 	  is_reading_body(false), read_buffer(), write_buffer() {}
 template <typename MessageType, typename Datatype>
-inline void Session<MessageType, Datatype>::write(size_t length,
-												  const void *buf) {
-	if (length <= 0 || buf == nullptr)
-		return;
+inline Session<MessageType, Datatype>::~Session() {
+	socket.close();
+}
+template <typename MessageType, typename Datatype>
+inline void Session<MessageType, Datatype>::write(MessageType type,
+												  size_t length,
+												  const void *content) {
+	if (length <= 0 || content == nullptr)
+		length = 0;
+	PkgHeader<MessageType> header{type, length};
 	std::lock_guard<std::mutex> lock(write_mutex);
-	memcpy(asio::buffer_cast<void *>(write_buffer.prepare(length)), buf,
-		   length);
-	write_buffer.commit(length);
+	void *dst = asio::buffer_cast<void *>(
+		write_buffer.prepare(length + sizeof(header)));
+
+	memcpy(dst, &header, sizeof(header));
+	if (length)
+		memcpy(reinterpret_cast<char *>(dst) + sizeof(header), content, length);
+	write_buffer.commit(length + sizeof(header));
 	if (!is_writing) {
 		doWrite();
 	}

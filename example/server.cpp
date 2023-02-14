@@ -12,7 +12,7 @@ int main() {
 					 << string().assign((const char *)content, length) << endl;
 
 				if (string().assign((const char *)content, length) == "exit") {
-					server.stop();
+					server.close(sess);
 				}
 				server.send(sess, type, length, content);
 			}
