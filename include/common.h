@@ -84,7 +84,7 @@ inline void Session<MessageType, Datatype>::write(size_t length,
 												  const void *buf) {
 	if (length <= 0 || buf == nullptr)
 		return;
-	std::lock_guard lock(write_mutex);
+	std::lock_guard<std::mutex> lock(write_mutex);
 	memcpy(asio::buffer_cast<void *>(write_buffer.prepare(length)), buf,
 		   length);
 	write_buffer.commit(length);
@@ -149,7 +149,7 @@ inline void Session<MessageType, Datatype>::doWrite() {
 				error_callback(this, "write failed: " + ec.message());
 			else {
 				write_buffer.consume(len);
-				std::lock_guard lock(write_mutex);
+				std::lock_guard<std::mutex> lock(write_mutex);
 				if (write_buffer.size() == 0)
 					is_writing = false;
 				else

@@ -126,15 +126,15 @@ template <typename MessageType> inline void Server<MessageType>::run() {
 // 主动关闭连接
 template <typename MessageType>
 inline void Server<MessageType>::close(Session<MessageType> *s) {
-	if (!s)
-		return;
 	if (event_disconnect_handler) {
 		event_disconnect_handler(s, EventDisconnect{});
 	}
-	s->socket.close();
 	std::lock_guard<std::mutex> lock(set_mutex);
-	session_set.erase(s);
-	delete s;
+	if (session_set.count(s)) {
+		s->socket.close();
+		session_set.erase(s);
+		delete s;
+	}
 }
 // 关闭所有连接，停止服务
 template <typename MessageType> inline void Server<MessageType>::stop() {
