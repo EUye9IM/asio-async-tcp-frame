@@ -52,9 +52,10 @@ void Session::doRead() {
 				stop_mtx.unlock();
 				return;
 			}
-			if (ec)
-				error_callback(this, true, ec);
-			else {
+			if (ec) {
+				if (error_callback)
+					error_callback(true, ec);
+			} else {
 				recv_buf.commit(len);
 				while (true) {
 					if (is_reading_head) {
@@ -71,9 +72,10 @@ void Session::doRead() {
 					} else {
 						if (recv_buf.size() >= bodylen) {
 							is_reading_head = true;
-							read_callback(this, bodylen,
-										  asio::buffer_cast<const void *>(
-											  recv_buf.data()));
+							if (read_callback)
+								read_callback(bodylen,
+											  asio::buffer_cast<const void *>(
+												  recv_buf.data()));
 							recv_buf.consume(bodylen);
 						} else {
 							break;
@@ -101,9 +103,10 @@ void Session::doWrite() {
 									stop_mtx.unlock();
 									return;
 								}
-								if (ec)
-									error_callback(this, false, ec);
-								else {
+								if (ec) {
+									if (error_callback)
+										error_callback(false, ec);
+								} else {
 									send_buf.consume(len);
 									std::lock_guard<std::mutex> lock(send_mtx);
 									doWrite();
