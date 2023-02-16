@@ -16,7 +16,6 @@ void Session::stop() {
 		stop_mtx.unlock();
 		return;
 	}
-	auto guard = shared_from_this();
 	stop_mtx.unlock();
 	socket.close();
 }
