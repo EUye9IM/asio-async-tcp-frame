@@ -44,20 +44,27 @@ private:
 template <typename MessageType>
 inline Client<MessageType>::Client(const std::string &server_ip,
 								   int server_port)
-	: io_ctx(), session(
-					std::move(asio::ip::tcp::socket(io_ctx)),
-					[this](Session<MessageType> *s, MessageType type,
-						   size_t len, const void *content) {
-						if (message_handler) {
-							message_handler(type, len, content);
-						}
-					},
-					[this](Session<MessageType> *s, const std::string &msg) {
-						if (event_error_handler) {
-							event_error_handler(EventError{msg});
-						}
-						this->close();
-					}) {
+	: io_ctx(),
+	  session(
+		  std::move(asio::ip::tcp::socket(io_ctx)),
+		  [this](Session<MessageType> *s, MessageType type, size_t len,
+				 const void *content) {
+			  if (message_handler) {
+				  message_handler(type, len, content);
+			  }
+		  },
+		  [this](Session<MessageType> *s, bool when_reading_else_writing,
+				 const std::error_code &ec) {
+			  if (ec != asio::error::eof && event_error_handler) {
+				  if (when_reading_else_writing)
+					  event_error_handler(
+						  EventError{"read failed: " + ec.message()});
+				  else
+					  event_error_handler(
+						  EventError{"write failed: " + ec.message()});
+			  }
+			  this->close();
+		  }) {
 	is_stop = false;
 	session.socket.async_connect(
 		asio::ip::tcp::endpoint(asio::ip::address::from_string(server_ip),

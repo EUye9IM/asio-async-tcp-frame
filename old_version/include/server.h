@@ -109,7 +109,7 @@ inline void Server<MessageType>::broadcast(MessageType type, size_t length,
 	std::lock_guard<std::mutex> lock(set_mutex);
 	for (auto s = session_set.begin(); s != session_set.end(); s++) {
 		send(*s, type, length, content);
-	}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
+	}
 }
 // 开始运行
 template <typename MessageType> inline void Server<MessageType>::run() {
@@ -126,6 +126,7 @@ inline void Server<MessageType>::close(Session<MessageType> *s) {
 		session_set.erase(s);
 		delete s;
 	}
+	printf("%s:%d\n", __FILE__, __LINE__);
 }
 // 关闭所有连接，停止服务
 template <typename MessageType> inline void Server<MessageType>::stop() {
@@ -143,6 +144,7 @@ template <typename MessageType> inline bool Server<MessageType>::is_stopped() {
 }
 
 template <typename MessageType> inline void Server<MessageType>::doAccept() {
+	printf("%s:%d\n", __FILE__, __LINE__);
 	acc.async_accept([this](std::error_code ec, asio::ip::tcp::socket socket) {
 		if (!ec) {
 			auto session = new Session<MessageType>(
@@ -153,12 +155,19 @@ template <typename MessageType> inline void Server<MessageType>::doAccept() {
 						message_handler(s, type, len, content);
 					}
 				},
-				[this](Session<MessageType> *s, const std::string &msg) {
-					if (event_error_handler) {
-						event_error_handler(s, EventError{msg});
+				[this](Session<MessageType> *s, bool when_reading_else_writing,
+					   const std::error_code &ec) {
+					if (ec != asio::error::eof && event_error_handler) {
+						if (when_reading_else_writing)
+							event_error_handler(
+								s, EventError{"read failed: " + ec.message()});
+						else
+							event_error_handler(
+								s, EventError{"write failed: " + ec.message()});
 					}
 					close(s);
 				});
+			printf("%s:%d\n", __FILE__, __LINE__);
 			session->run();
 			if (true) {
 				std::lock_guard<std::mutex> lock(set_mutex);

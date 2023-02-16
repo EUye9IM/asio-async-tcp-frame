@@ -25,14 +25,16 @@ public:
 							   size_t, const void *)>
 				read_callback,
 			std::function<void(Session<MessageType, Datatype> *,
-							   const std::string &)>
+							   bool when_reading_else_writing,
+							   const std::error_code &)>
 				error_callback);
 	Session(asio::ip::tcp::socket,
 			std::function<void(Session<MessageType, Datatype> *, MessageType,
 							   size_t, const void *)>
 				read_callback,
 			std::function<void(Session<MessageType, Datatype> *,
-							   const std::string &)>
+							   bool when_reading_else_writing,
+							   const std::error_code &)>
 				error_callback);
 	~Session();
 
@@ -48,7 +50,8 @@ private:
 	std::function<void(Session<MessageType, Datatype> *, MessageType, size_t,
 					   const void *)>
 		read_callback;
-	std::function<void(Session<MessageType, Datatype> *, const std::string &)>
+	std::function<void(Session<MessageType, Datatype> *, bool,
+					   const std::error_code &)>
 		error_callback;
 	std::mutex write_mutex;
 	bool is_writing;
@@ -63,7 +66,8 @@ inline Session<MessageType, Datatype>::Session(
 	std::function<void(Session<MessageType, Datatype> *, MessageType, size_t,
 					   const void *)>
 		read_callback,
-	std::function<void(Session<MessageType, Datatype> *, const std::string &)>
+	std::function<void(Session<MessageType, Datatype> *,
+					   bool when_reading_else_writing, const std::error_code &)>
 		error_callback)
 	: data(data), socket(std::move(socket)), pkg_header(),
 	  read_callback(read_callback), error_callback(error_callback),
@@ -75,7 +79,8 @@ inline Session<MessageType, Datatype>::Session(
 	std::function<void(Session<MessageType, Datatype> *, MessageType, size_t,
 					   const void *)>
 		read_callback,
-	std::function<void(Session<MessageType, Datatype> *, const std::string &)>
+	std::function<void(Session<MessageType, Datatype> *,
+					   bool when_reading_else_writing, const std::error_code &)>
 		error_callback)
 	: socket(std::move(socket)), pkg_header(), read_callback(read_callback),
 	  error_callback(error_callback), write_mutex(), is_writing(false),
@@ -114,7 +119,7 @@ inline void Session<MessageType, Datatype>::doRead() {
 		read_buffer.prepare(bytes_num),
 		[this](const std::error_code &ec, size_t len) {
 			if (ec)
-				error_callback(this, "read failed: " + ec.message());
+				error_callback(this, true, ec);
 			else {
 				read_buffer.commit(len);
 				while (1) {
@@ -157,7 +162,7 @@ inline void Session<MessageType, Datatype>::doWrite() {
 	socket.async_write_some(
 		write_buffer.data(), [this](const std::error_code &ec, size_t len) {
 			if (ec)
-				error_callback(this, "write failed: " + ec.message());
+				error_callback(this, false, ec);
 			else {
 				write_buffer.consume(len);
 				std::lock_guard<std::mutex> lock(write_mutex);
