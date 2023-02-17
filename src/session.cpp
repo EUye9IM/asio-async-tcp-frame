@@ -103,12 +103,13 @@ void Session::doWrite() {
 									stop_mtx.unlock();
 									return;
 								}
+								auto guard = shared_from_this();
 								if (ec) {
 									if (error_callback)
 										error_callback(false, ec);
 								} else {
-									send_buf.consume(len);
 									std::lock_guard<std::mutex> lock(send_mtx);
+									send_buf.consume(len);
 									doWrite();
 								}
 							});

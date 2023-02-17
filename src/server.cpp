@@ -24,8 +24,10 @@ void Server::write(Session *session, PakHeadData head_data, size_t length,
 	if (length < 0)
 		length = 0;
 	auto buf = new char[length + HD_LEN];
-	if (buf == nullptr)
+	if (buf == nullptr) {
+		_error(nullptr, "write error: bad alloc");
 		return;
+	}
 	memcpy(buf, &head_data, HD_LEN);
 	if (length)
 		memcpy(buf + HD_LEN, content, length);
@@ -37,8 +39,10 @@ void Server::broadcast(PakHeadData head_data, size_t length,
 	if (length < 0)
 		length = 0;
 	auto buf = new char[length + HD_LEN];
-	if (buf == nullptr)
+	if (buf == nullptr) {
+		_error(nullptr, "broadcast error: bad alloc");
 		return;
+	}
 	memcpy(buf, &head_data, HD_LEN);
 	if (length)
 		memcpy(buf + HD_LEN, content, length);
