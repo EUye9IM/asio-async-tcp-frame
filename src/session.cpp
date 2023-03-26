@@ -2,7 +2,7 @@
 using namespace std;
 using namespace asio;
 Session::Session(asio::ip::tcp::socket socket)
-	: socket(move(socket)), is_reading_head(true), is_writing(false),
+	: socket(std::move(socket)), is_reading_head(true), is_writing(false),
 	  bodylen(0) {
 	stop_mtx.lock();
 }
@@ -17,6 +17,11 @@ void Session::stop() {
 		return;
 	}
 	stop_mtx.unlock();
+	try {
+		socket.shutdown(asio::ip::tcp::socket::shutdown_send);
+	} catch (const std::exception &) {
+		// catch exception when error raised before connect
+	}
 	socket.close();
 }
 void Session::write(PakSize length, const void *content) {
