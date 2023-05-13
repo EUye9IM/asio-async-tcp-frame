@@ -4,8 +4,9 @@ using namespace std;
 using namespace asio;
 using asio::ip::tcp;
 
-ClientTCP::ClientTCP(const std::string &ip, int port) : io_ctx() {
-	session = make_shared<Session>(move(tcp::socket(io_ctx)));
+ClientTCP::ClientTCP(const std::string &ip, int port)
+	: io_ctx(new asio::io_context()) {
+	session = make_shared<Session>(move(tcp::socket(*io_ctx)));
 	session->read_callback = [this](PakSize length, const void *content) {
 		int bodylen = length - HD_LEN;
 		if (bodylen < 0)
@@ -33,7 +34,43 @@ ClientTCP::ClientTCP(const std::string &ip, int port) : io_ctx() {
 			}
 		});
 }
-ClientTCP::~ClientTCP() { session->stop(); }
+ClientTCP::ClientTCP(asio::io_context &io_context, const std::string &ip,
+					 int port)
+	: io_ctx(nullptr) {
+	session = make_shared<Session>(move(tcp::socket(io_context)));
+	session->read_callback = [this](PakSize length, const void *content) {
+		int bodylen = length - HD_LEN;
+		if (bodylen < 0)
+			_error("read failed: content is too short");
+		PakHeadData hd;
+		memcpy(&hd, content, HD_LEN);
+		_message(hd, bodylen, reinterpret_cast<const char *>(content) + HD_LEN);
+	};
+	session->error_callback = [this](bool err_when_reading,
+									 const error_code &ec) {
+		if (ec != asio::error::eof) {
+			_error(string() + (err_when_reading ? "read" : "write") +
+				   " failed: " + ec.message());
+		}
+		_disconnect();
+	};
+	session->socket.async_connect(
+		tcp::endpoint(ip::address::from_string(ip), port),
+		[this](std::error_code ec) {
+			if (!ec) {
+				session->start();
+				_connect(session->socket);
+			} else {
+				_error(ec.message());
+			}
+		});
+}
+ClientTCP::~ClientTCP() {
+	session->stop();
+	if (io_ctx) {
+		delete io_ctx;
+	}
+}
 void ClientTCP::write(PakHeadData head_data, size_t length,
 					  const void *content) {
 	if (length < 0)
@@ -47,7 +84,10 @@ void ClientTCP::write(PakHeadData head_data, size_t length,
 	session->write(length + HD_LEN, buf);
 	delete[] buf;
 }
-void ClientTCP::run() { io_ctx.run(); }
+void ClientTCP::run() {
+	if (io_ctx)
+		io_ctx->run();
+}
 void ClientTCP::close() { session->stop(); }
 void ClientTCP::_message(PakHeadData head_data, size_t length,
 						 const void *content) {

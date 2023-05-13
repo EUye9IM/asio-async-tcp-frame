@@ -5,6 +5,7 @@ class ClientTCP {
 public:
 	// 构造时连接
 	ClientTCP(const std::string &ip, int port);
+	ClientTCP(asio::io_context &io_context, const std::string &ip, int port);
 	~ClientTCP();
 	// 发送报文
 	void write(PakHeadData head_data, size_t length, const void *content);
@@ -27,6 +28,6 @@ private:
 	void _error(const std::string &socket);
 	void _connect(const asio::ip::tcp::socket &socket);
 	void _disconnect();
-	asio::io_context io_ctx;
+	asio::io_context *io_ctx;
 	SessionPtr session;
 };
