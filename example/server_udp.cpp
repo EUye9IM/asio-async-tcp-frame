@@ -17,8 +17,6 @@ int main() {
 				 << string(reinterpret_cast<const char *>(content),
 						   reinterpret_cast<const char *>(content) + length)
 				 << endl;
-			remote_addr.port(port + 1);
-			server.write(remote_addr, PakHeadData{}, length, content);
 		};
 		server.run();
 	} catch (const std::exception &e) {
