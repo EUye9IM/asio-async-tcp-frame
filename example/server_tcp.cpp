@@ -6,7 +6,7 @@ using asio::ip::tcp;
 
 int main() {
 	try {
-		Server server(ip, port);
+		ServerTCP server(ip, port);
 		server.onConnect = [&server](Session *session,
 									 const tcp::socket &socket) {
 			cout << "Connect: 0x" << hex << session << endl;

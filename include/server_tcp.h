@@ -2,12 +2,12 @@
 #include "session.h"
 #include <map>
 
-class Server {
+class ServerTCP {
 public:
 	// 监听端口
-	Server(const std::string &ip, int port);
-	Server(asio::io_context &io_context, const std::string &ip, int port);
-	~Server();
+	ServerTCP(const std::string &ip, int port);
+	ServerTCP(asio::io_context &io_context, const std::string &ip, int port);
+	~ServerTCP();
 	// 消息回调
 	std::function<void(Session *session, PakHeadData type, size_t length,
 					   const void *content)>

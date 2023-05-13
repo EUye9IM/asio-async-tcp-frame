@@ -4,23 +4,23 @@ using namespace std;
 using namespace asio;
 using asio::ip::tcp;
 
-Server::Server(const std::string &ip, int port)
+ServerTCP::ServerTCP(const std::string &ip, int port)
 	: io_ctx(new io_context()),
 	  acc(*io_ctx, tcp::endpoint(ip::address::from_string(ip), port)) {
 	doAccept();
 }
 
-Server::Server(asio::io_context &io_context, const std::string &ip, int port)
+ServerTCP::ServerTCP(asio::io_context &io_context, const std::string &ip, int port)
 	: io_ctx(nullptr),
 	  acc(io_context, tcp::endpoint(ip::address::from_string(ip), port)) {
 	doAccept();
 }
-Server::~Server() {
+ServerTCP::~ServerTCP() {
 	stop();
 	if (io_ctx)
 		delete io_ctx;
 }
-void Server::write(Session *session, PakHeadData head_data, size_t length,
+void ServerTCP::write(Session *session, PakHeadData head_data, size_t length,
 				   const void *content) {
 	SessionPtr s;
 	if (true) {
@@ -42,7 +42,7 @@ void Server::write(Session *session, PakHeadData head_data, size_t length,
 	s->write(length + HD_LEN, buf);
 	delete[] buf;
 }
-void Server::broadcast(PakHeadData head_data, size_t length,
+void ServerTCP::broadcast(PakHeadData head_data, size_t length,
 					   const void *content) {
 	if (length < 0)
 		length = 0;
@@ -60,29 +60,29 @@ void Server::broadcast(PakHeadData head_data, size_t length,
 	}
 	delete[] buf;
 }
-void Server::run() {
+void ServerTCP::run() {
 	if (io_ctx)
 		io_ctx->run();
 }
-void Server::stop() {
+void ServerTCP::stop() {
 	acc.close();
 	closeAll();
 }
-void Server::close(Session *session) {
+void ServerTCP::close(Session *session) {
 	lock_guard<mutex> guard(sess_pool_mtx);
 	if (session_pool.count(session)) {
 		_disconnect(session);
 		session_pool.erase(session);
 	}
 }
-void Server::closeAll() {
+void ServerTCP::closeAll() {
 	lock_guard<mutex> guard(sess_pool_mtx);
 	for (auto &s : session_pool) {
 		_disconnect(s.first);
 		session_pool.erase(s.first);
 	}
 }
-void Server::doAccept() {
+void ServerTCP::doAccept() {
 	acc.async_accept([this](const error_code &ec, tcp::socket socket) {
 		if (!ec) {
 			auto session = make_shared<Session>(move(socket));
@@ -115,20 +115,20 @@ void Server::doAccept() {
 		}
 	});
 }
-void Server::_message(Session *session, PakHeadData head_data, size_t length,
+void ServerTCP::_message(Session *session, PakHeadData head_data, size_t length,
 					  const void *content) {
 	if (onMessage)
 		onMessage(session, head_data, length, content);
 }
-void Server::_error(Session *session, const std::string &message) {
+void ServerTCP::_error(Session *session, const std::string &message) {
 	if (onError)
 		onError(session, message);
 }
-void Server::_connect(Session *session, const asio::ip::tcp::socket &socket) {
+void ServerTCP::_connect(Session *session, const asio::ip::tcp::socket &socket) {
 	if (onConnect)
 		onConnect(session, socket);
 }
-void Server::_disconnect(Session *session) {
+void ServerTCP::_disconnect(Session *session) {
 	if (onDisconnect)
 		onDisconnect(session);
 }
