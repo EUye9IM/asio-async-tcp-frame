@@ -1,11 +1,11 @@
 #pragma once
 #include "session.h"
 
-class Client {
+class ClientTCP {
 public:
 	// 构造时连接
-	Client(const std::string &ip, int port);
-	~Client();
+	ClientTCP(const std::string &ip, int port);
+	~ClientTCP();
 	// 发送报文
 	void write(PakHeadData head_data, size_t length, const void *content);
 	// 开始运行（阻塞）

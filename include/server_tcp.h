@@ -6,6 +6,7 @@ class Server {
 public:
 	// 监听端口
 	Server(const std::string &ip, int port);
+	Server(asio::io_context &io_context, const std::string &ip, int port);
 	~Server();
 	// 消息回调
 	std::function<void(Session *session, PakHeadData type, size_t length,
@@ -39,7 +40,7 @@ private:
 	void _error(Session *session, const std::string &socket);
 	void _connect(Session *session, const asio::ip::tcp::socket &socket);
 	void _disconnect(Session *session);
-	asio::io_context io_ctx;
+	asio::io_context *io_ctx;
 	asio::ip::tcp::acceptor acc;
 	std::mutex sess_pool_mtx;
 	std::map<Session *, SessionPtr> session_pool;

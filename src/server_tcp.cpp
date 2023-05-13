@@ -1,17 +1,25 @@
-#include "server.h"
+#include "server_tcp.h"
 
 using namespace std;
 using namespace asio;
 using asio::ip::tcp;
 
-static const int HD_LEN = sizeof(PakHeadData);
-
 Server::Server(const std::string &ip, int port)
-	: io_ctx(), acc(io_ctx, tcp::endpoint(ip::address::from_string(ip), port)) {
+	: io_ctx(new io_context()),
+	  acc(*io_ctx, tcp::endpoint(ip::address::from_string(ip), port)) {
 	doAccept();
 }
 
-Server::~Server() { stop(); }
+Server::Server(asio::io_context &io_context, const std::string &ip, int port)
+	: io_ctx(nullptr),
+	  acc(io_context, tcp::endpoint(ip::address::from_string(ip), port)) {
+	doAccept();
+}
+Server::~Server() {
+	stop();
+	if (io_ctx)
+		delete io_ctx;
+}
 void Server::write(Session *session, PakHeadData head_data, size_t length,
 				   const void *content) {
 	SessionPtr s;
@@ -52,7 +60,10 @@ void Server::broadcast(PakHeadData head_data, size_t length,
 	}
 	delete[] buf;
 }
-void Server::run() { io_ctx.run(); }
+void Server::run() {
+	if (io_ctx)
+		io_ctx->run();
+}
 void Server::stop() {
 	acc.close();
 	closeAll();

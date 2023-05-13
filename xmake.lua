@@ -1,29 +1,34 @@
 set_warnings("all", "error")
-set_languages("c11")
+set_languages("c++17")
 
-if is_os("windows") then
-	add_cxflags("-fexec-charset=gb18030")
-end
+add_rules("mode.release", "mode.debug")
 
 add_includedirs("include")
 add_includedirs("asio")
 
 if is_os("windows") then
 	add_defines("_WIN32_WINNT=0x0601")
-	add_links("ws2_32")
-	add_links("Bcrypt")
-	add_links("wsock32")
+	add_links("ws2_32", "Bcrypt", "wsock32")
 end
 
 add_files("src/**.cpp")
 add_defines("ASIO_STANDALONE")
 add_defines("ASIO_SEPARATE_COMPILATION")
 
-target("server")
+target("server-tcp")
 	set_kind("binary")
-	add_files("example/server.cpp")
+	add_files("example/server_tcp.cpp")
 target_end()
 
-target("client")
-	add_files("example/client.cpp")
+target("client-tcp")
+	add_files("example/client_tcp.cpp")
+target_end()
+
+target("server-udp")
+	set_kind("binary")
+	add_files("example/server_udp.cpp")
+target_end()
+
+target("client-udp")
+	add_files("example/client_udp.cpp")
 target_end()

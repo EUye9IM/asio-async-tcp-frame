@@ -1,12 +1,12 @@
 #include "common.hpp"
-#include <client.h>
+#include <client_tcp.h>
 #include <iostream>
 using namespace std;
 using asio::ip::tcp;
 
 int main() {
 	try {
-		Client client(ip, port);
+		ClientTCP client(ip, port);
 		client.onConnect = [](const tcp::socket &socket) {};
 		client.onDisconnect = []() { cout << "Disonnect" << endl; };
 		client.onError = [](const string &message) {

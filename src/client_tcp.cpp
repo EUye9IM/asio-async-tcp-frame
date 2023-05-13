@@ -1,12 +1,10 @@
-#include "client.h"
+#include "client_tcp.h"
 
 using namespace std;
 using namespace asio;
 using asio::ip::tcp;
 
-static const int HD_LEN = sizeof(PakHeadData);
-
-Client::Client(const std::string &ip, int port) : io_ctx() {
+ClientTCP::ClientTCP(const std::string &ip, int port) : io_ctx() {
 	session = make_shared<Session>(move(tcp::socket(io_ctx)));
 	session->read_callback = [this](PakSize length, const void *content) {
 		int bodylen = length - HD_LEN;
@@ -35,8 +33,9 @@ Client::Client(const std::string &ip, int port) : io_ctx() {
 			}
 		});
 }
-Client::~Client() { session->stop(); }
-void Client::write(PakHeadData head_data, size_t length, const void *content) {
+ClientTCP::~ClientTCP() { session->stop(); }
+void ClientTCP::write(PakHeadData head_data, size_t length,
+					  const void *content) {
 	if (length < 0)
 		length = 0;
 	auto buf = new char[length + HD_LEN];
@@ -48,22 +47,22 @@ void Client::write(PakHeadData head_data, size_t length, const void *content) {
 	session->write(length + HD_LEN, buf);
 	delete[] buf;
 }
-void Client::run() { io_ctx.run(); }
-void Client::close() { session->stop(); }
-void Client::_message(PakHeadData head_data, size_t length,
-					  const void *content) {
+void ClientTCP::run() { io_ctx.run(); }
+void ClientTCP::close() { session->stop(); }
+void ClientTCP::_message(PakHeadData head_data, size_t length,
+						 const void *content) {
 	if (onMessage)
 		onMessage(head_data, length, content);
 }
-void Client::_error(const std::string &message) {
+void ClientTCP::_error(const std::string &message) {
 	if (onError)
 		onError(message);
 }
-void Client::_connect(const asio::ip::tcp::socket &socket) {
+void ClientTCP::_connect(const asio::ip::tcp::socket &socket) {
 	if (onConnect)
 		onConnect(socket);
 }
-void Client::_disconnect() {
+void ClientTCP::_disconnect() {
 	if (onDisconnect)
 		onDisconnect();
 }
