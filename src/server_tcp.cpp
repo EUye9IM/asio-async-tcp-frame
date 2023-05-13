@@ -90,24 +90,23 @@ void Server::doAccept() {
 				lock_guard<mutex> guard(sess_pool_mtx);
 				session_pool[session.get()] = session;
 			}
-			session->error_callback =
-				[this, s = session.get()](bool at_reading,
-										  const error_code &ec) {
-					if (ec != error::eof) {
-						_error(s, ec.message());
-					}
-					this->close(s);
-				};
-			session->read_callback =
-				[this, s = session.get()](PakSize length, const void *content) {
-					int bodylen = length - HD_LEN;
-					if (bodylen < 0)
-						_error(s, "read failed: content is too short");
-					PakHeadData hd;
-					memcpy(&hd, content, HD_LEN);
-					_message(s, hd, bodylen,
-							 reinterpret_cast<const char *>(content) + HD_LEN);
-				};
+			session->error_callback = [this, session](bool at_reading,
+													  const error_code &ec) {
+				if (ec != error::eof) {
+					_error(session.get(), ec.message());
+				}
+				this->close(session.get());
+			};
+			session->read_callback = [this, session](PakSize length,
+													 const void *content) {
+				int bodylen = length - HD_LEN;
+				if (bodylen < 0)
+					_error(session.get(), "read failed: content is too short");
+				PakHeadData hd;
+				memcpy(&hd, content, HD_LEN);
+				_message(session.get(), hd, bodylen,
+						 reinterpret_cast<const char *>(content) + HD_LEN);
+			};
 			_connect(session.get(), session->socket);
 			session->start();
 			doAccept();
