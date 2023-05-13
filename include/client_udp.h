@@ -12,6 +12,8 @@ public:
 
 	// 开始运行（阻塞）
 	void run();
+	// 执行一次（发送）
+	void run_once();
 	// 停止
 	void stop();
 	// 发送
